@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CIRT Issues vs. Behavior Spec | R105 Analysis</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Rethink+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --color-ai-enabled: #30258D;
+      --color-ai-hover: #3E30B7;
+      --color-ai-pressed: #292079;
+      --color-text-high: rgba(0,0,0,0.87);
+      --color-text-mid: rgba(0,0,0,0.60);
+      --color-text-disabled: rgba(0,0,0,0.30);
+      --color-surface-white: #FFFFFF;
+      --color-surface-page: #F0F0F0;
+      --color-surface-ai-subtle: rgba(48,37,141,0.05);
+      --color-border-subtle: rgba(48,37,141,0.15);
+      --color-border-divider: rgba(0,0,0,0.08);
+      --color-annotation: #8629FF;
+
+      --color-high: #1B7D3A;
+      --color-medium: #E68A00;
+      --color-low: #C0392B;
+      --color-closed: #7F8C8D;
+      --color-orch: #30258D;
+      --color-agent: #D35400;
+      --color-system: #7F8C8D;
+
+      --font-sans: 'DM Sans', sans-serif;
+      --font-data: 'Rethink Sans', sans-serif;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font: 400 16px/24px var(--font-sans);
+      color: var(--color-text-high);
+      background: var(--color-surface-page);
+    }
+
+    /* ── Layout ── */
+    .page {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 48px 32px 80px;
+    }
+
+    /* ── Header ── */
+    .header {
+      margin-bottom: 48px;
+    }
+    .header__label {
+      font: 500 14px/16px var(--font-sans);
+      color: var(--color-ai-enabled);
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      margin-bottom: 12px;
+    }
+    .header__title {
+      font: 600 32px/40px var(--font-sans);
+      color: var(--color-text-high);
+      margin-bottom: 8px;
+    }
+    .header__subtitle {
+      font: 400 16px/24px var(--font-sans);
+      color: var(--color-text-mid);
+    }
+    .header__date {
+      font: 400 14px/20px var(--font-sans);
+      color: var(--color-text-disabled);
+      margin-top: 8px;
+    }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--color-surface-white);
+      border-radius: 12px;
+      padding: 32px;
+      margin-bottom: 24px;
+      border: 1px solid var(--color-border-subtle);
+    }
+    .card--highlight {
+      background: var(--color-surface-ai-subtle);
+      border-color: var(--color-ai-enabled);
+    }
+    .card__title {
+      font: 600 20px/24px var(--font-sans);
+      margin-bottom: 16px;
+      color: var(--color-text-high);
+    }
+    .card__subtitle {
+      font: 500 14px/20px var(--font-sans);
+      color: var(--color-text-mid);
+      margin-bottom: 20px;
+    }
+    .card__body {
+      font: 400 15px/24px var(--font-sans);
+      color: var(--color-text-mid);
+    }
+    .card__body p { margin-bottom: 12px; }
+
+    /* ── Stat row ── */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .stat {
+      background: var(--color-surface-white);
+      border-radius: 12px;
+      padding: 24px;
+      border: 1px solid var(--color-border-subtle);
+      text-align: center;
+    }
+    .stat__number {
+      font: 700 36px/1 var(--font-sans);
+      margin-bottom: 6px;
+    }
+    .stat__label {
+      font: 400 13px/18px var(--font-sans);
+      color: var(--color-text-mid);
+    }
+
+    /* ── Section headings ── */
+    .section-heading {
+      font: 600 14px/16px var(--font-sans);
+      color: var(--color-ai-enabled);
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      margin: 48px 0 16px;
+    }
+
+    /* ── Callout ── */
+    .callout {
+      background: var(--color-surface-ai-subtle);
+      border-left: 4px solid var(--color-ai-enabled);
+      border-radius: 0 8px 8px 0;
+      padding: 20px 24px;
+      margin: 20px 0;
+    }
+    .callout__text {
+      font: 500 15px/24px var(--font-sans);
+      color: var(--color-text-high);
+    }
+    .callout--warn {
+      background: #FFF8E1;
+      border-left-color: var(--color-medium);
+    }
+
+    /* ── Horizontal bar chart ── */
+    .bar-chart { margin: 16px 0; }
+    .bar-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .bar-row__label {
+      width: 180px;
+      font: 500 14px/20px var(--font-sans);
+      color: var(--color-text-high);
+      flex-shrink: 0;
+    }
+    .bar-row__track {
+      flex: 1;
+      height: 28px;
+      background: var(--color-surface-page);
+      border-radius: 6px;
+      overflow: hidden;
+      position: relative;
+    }
+    .bar-row__fill {
+      height: 100%;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      padding-left: 10px;
+      font: 600 13px/1 var(--font-sans);
+      color: white;
+      transition: width 0.6s ease;
+    }
+    .bar-row__count {
+      width: 50px;
+      text-align: right;
+      font: 600 14px/20px var(--font-data);
+      color: var(--color-text-high);
+      flex-shrink: 0;
+      margin-left: 12px;
+    }
+
+    /* ── Donut chart (CSS) ── */
+    .donut-container {
+      display: flex;
+      align-items: center;
+      gap: 40px;
+      margin: 24px 0;
+    }
+    .donut {
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      position: relative;
+      flex-shrink: 0;
+    }
+    .donut__center {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+    }
+    .donut__center-number {
+      font: 700 36px/1 var(--font-sans);
+      color: var(--color-text-high);
+    }
+    .donut__center-label {
+      font: 400 12px/16px var(--font-sans);
+      color: var(--color-text-mid);
+      margin-top: 2px;
+    }
+    .legend { list-style: none; }
+    .legend li {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+      font: 400 14px/20px var(--font-sans);
+      color: var(--color-text-high);
+    }
+    .legend__dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      margin-right: 10px;
+      flex-shrink: 0;
+    }
+    .legend__count {
+      font: 600 14px/20px var(--font-data);
+      margin-left: 8px;
+    }
+
+    /* ── Tables ── */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font: 400 14px/20px var(--font-data);
+      margin: 16px 0;
+    }
+    .data-table thead th {
+      font: 600 12px/16px var(--font-sans);
+      color: var(--color-text-mid);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      text-align: left;
+      padding: 10px 12px;
+      border-bottom: 2px solid var(--color-border-subtle);
+    }
+    .data-table tbody td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--color-border-divider);
+      vertical-align: top;
+    }
+    .data-table tbody tr:last-child td { border-bottom: none; }
+
+    /* ── Tags ── */
+    .tag {
+      display: inline-block;
+      font: 600 11px/1 var(--font-sans);
+      padding: 4px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+    }
+    .tag--high    { background: #E8F5E9; color: #1B7D3A; }
+    .tag--medium  { background: #FFF3E0; color: #E65100; }
+    .tag--low     { background: #FFEBEE; color: #C0392B; }
+    .tag--closed  { background: #ECEFF1; color: #546E7A; }
+    .tag--orch    { background: rgba(48,37,141,0.1); color: #30258D; }
+    .tag--agent   { background: #FFF3E0; color: #D35400; }
+    .tag--system  { background: #ECEFF1; color: #546E7A; }
+
+    /* ── Layer diagram ── */
+    .layers {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      margin: 24px 0;
+      max-width: 600px;
+    }
+    .layer {
+      display: flex;
+      align-items: center;
+      padding: 16px 20px;
+      border-radius: 8px;
+      font: 500 14px/20px var(--font-sans);
+      color: white;
+    }
+    .layer__label { flex: 1; }
+    .layer__detail {
+      font: 400 13px/18px var(--font-sans);
+      opacity: 0.85;
+      margin-left: 16px;
+    }
+    .layer__count {
+      font: 700 20px/1 var(--font-sans);
+      margin-left: 16px;
+    }
+    .layer--orch  { background: var(--color-orch); }
+    .layer--agent { background: var(--color-agent); }
+    .layer--sys   { background: var(--color-system); }
+
+    /* ── Timeline ── */
+    .timeline {
+      position: relative;
+      padding-left: 28px;
+      margin: 20px 0;
+    }
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 8px;
+      top: 4px;
+      bottom: 4px;
+      width: 2px;
+      background: var(--color-border-subtle);
+    }
+    .timeline__item {
+      position: relative;
+      margin-bottom: 24px;
+    }
+    .timeline__item:last-child { margin-bottom: 0; }
+    .timeline__dot {
+      position: absolute;
+      left: -24px;
+      top: 3px;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 3px solid var(--color-ai-enabled);
+      background: white;
+    }
+    .timeline__dot--done {
+      background: var(--color-ai-enabled);
+    }
+    .timeline__title {
+      font: 600 15px/20px var(--font-sans);
+      color: var(--color-text-high);
+      margin-bottom: 4px;
+    }
+    .timeline__desc {
+      font: 400 14px/20px var(--font-sans);
+      color: var(--color-text-mid);
+    }
+
+    /* ── Footer ── */
+    .footer {
+      margin-top: 64px;
+      padding-top: 24px;
+      border-top: 1px solid var(--color-border-divider);
+      font: 400 13px/18px var(--font-sans);
+      color: var(--color-text-disabled);
+    }
+
+    /* ── Utilities ── */
+    .mt-24 { margin-top: 24px; }
+    .mt-16 { margin-top: 16px; }
+    .mb-8 { margin-bottom: 8px; }
+    .text-mid { color: var(--color-text-mid); }
+    .flex-between { display: flex; justify-content: space-between; align-items: baseline; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ══════════════════════════════════════════════ HEADER ══════════ -->
+  <header class="header">
+    <div class="header__label">Bryte AI &middot; ESS/MSS Agents R105</div>
+    <h1 class="header__title">CIRT Issues vs. Orchestrator Behavior Spec</h1>
+    <p class="header__subtitle">What the spec covers, what it doesn't, and how to frame its value</p>
+    <p class="header__date">Analysis date: March 19, 2026 &middot; Data source: Jira label <code>CIRTAgent</code> &middot; <a href="https://engconf.int.kronos.com/spaces/DEV/pages/1118877050/Program+Dashboard+-+ESS+MSS+Agents+105" target="_blank" style="color: var(--color-ai-enabled);">Program Dashboard — ESS/MSS Agents R105 &nearr;</a></p>
+  </header>
+
+  <!-- ══════════════════════════════════════════════ KEY NUMBERS ══════ -->
+  <div class="stats">
+    <div class="stat">
+      <div class="stat__number" style="color: var(--color-ai-enabled);">51</div>
+      <div class="stat__label">Total CIRT issues</div>
+    </div>
+    <div class="stat">
+      <div class="stat__number" style="color: var(--color-high);">15</div>
+      <div class="stat__label">Behavioral issues<br>(spec's domain)</div>
+    </div>
+    <div class="stat">
+      <div class="stat__number" style="color: var(--color-agent);">19</div>
+      <div class="stat__label">Agent-level bugs<br>(code fixes needed)</div>
+    </div>
+    <div class="stat">
+      <div class="stat__number" style="color: var(--color-system);">8+9</div>
+      <div class="stat__label">System / infra +<br>already closed</div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ SECTION 2 ═══════ -->
+  <div class="section-heading">1 &middot; Spec Coverage of Behavioral Issues</div>
+
+  <div class="card">
+    <div class="card__title">The spec covers 87% of behavioral issues</div>
+    <div class="card__subtitle">13 of 15 behavioral issues are directly addressed by spec rules</div>
+
+    <div class="donut-container">
+      <div class="donut" style="background: conic-gradient(var(--color-high) 0deg 312deg, var(--color-low) 312deg 360deg);">
+        <div class="donut__center" style="background: white; width: 110px; height: 110px; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+          <div class="donut__center-number">87%</div>
+          <div class="donut__center-label">covered</div>
+        </div>
+      </div>
+      <ul class="legend">
+        <li><span class="legend__dot" style="background: var(--color-high);"></span>Covered by spec rules <span class="legend__count">13</span></li>
+        <li><span class="legend__dot" style="background: var(--color-low);"></span>Gap: localization (no spec rules) <span class="legend__count">2</span></li>
+      </ul>
+    </div>
+
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Issue</th>
+          <th>Problem</th>
+          <th>Spec Rule</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>RS-119420</td>
+          <td>Exposes internal system details</td>
+          <td>RT-02, GRD-07</td>
+          <td><span class="tag tag--high">Covered</span></td>
+        </tr>
+        <tr>
+          <td>RS-119511</td>
+          <td>Presents itself as Google product</td>
+          <td>TONE-01</td>
+          <td><span class="tag tag--high">Covered</span></td>
+        </tr>
+        <tr>
+          <td>RS-119527</td>
+          <td>Shows Python code to end user</td>
+          <td>RT-02, GRD-07</td>
+          <td><span class="tag tag--high">Covered</span></td>
+        </tr>
+        <tr>
+          <td>RS-119531</td>
+          <td>Reveals internal agent names</td>
+          <td>RT-02</td>
+          <td><span class="tag tag--high">Covered</span></td>
+        </tr>
+        <tr>
+          <td>RS-119624</td>
+          <td>Discloses JSON file names</td>
+          <td>RT-02, GRD-07</td>
+          <td><span class="tag tag--high">Covered</span></td>
+        </tr>
+        <tr>
+          <td>RS-119626</td>
+          <td>"Take me to Scheduler Agent" works</td>
+          <td>RT-02</td>
+          <td><span class="tag tag--high">Covered</span></td>
+        </tr>
+        <tr>
+          <td>RS-119477</td>
+          <td>Tool message during context switch</td>
+          <td>RT-02, FMT-08</td>
+          <td><span class="tag tag--high">Covered</span></td>
+        </tr>
+        <tr>
+          <td>RS-118709</td>
+          <td>Scope limited to HR/Payroll only</td>
+          <td>FB-01, ID-01</td>
+          <td><span class="tag tag--high">Covered</span></td>
+        </tr>
+        <tr>
+          <td>RS-119627</td>
+          <td>Fails on slight wording changes</td>
+          <td>ID-03</td>
+          <td><span class="tag tag--high">Covered</span></td>
+        </tr>
+        <tr>
+          <td>RS-119548</td>
+          <td>Refuses when agent is enabled</td>
+          <td>ID-01, FB-01</td>
+          <td><span class="tag tag--high">Covered</span></td>
+        </tr>
+        <tr>
+          <td>RS-120998</td>
+          <td>Routes Punch to wrong agent</td>
+          <td>RT-01, ID-01</td>
+          <td><span class="tag tag--high">Covered</span></td>
+        </tr>
+        <tr>
+          <td>RS-119442</td>
+          <td>Refused capable query initially</td>
+          <td>ID-01, FB-01</td>
+          <td><span class="tag tag--high">Covered</span></td>
+        </tr>
+        <tr>
+          <td>RS-119228</td>
+          <td>Multiple agent message on rapid requests</td>
+          <td>RT-02, FB-03</td>
+          <td><span class="tag tag--high">Covered</span></td>
+        </tr>
+        <tr style="background: #FFF8F8;">
+          <td>RS-121669</td>
+          <td>Says "can only answer in English"</td>
+          <td>&mdash;</td>
+          <td><span class="tag tag--low">Gap</span></td>
+        </tr>
+        <tr style="background: #FFF8F8;">
+          <td>RS-121716</td>
+          <td>Auto-suggestions English only</td>
+          <td>&mdash;</td>
+          <td><span class="tag tag--low">Gap</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout--warn">
+      <div class="callout__text">The 2 uncovered issues are both <strong>localization</strong> &mdash; the spec has no rules for multi-language behavior. Adding a localization section would bring coverage to 100% of behavioral issues.</div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ SECTION 3 ═══════ -->
+  <div class="section-heading">2 &middot; Where Do Functional Issues Live?</div>
+
+  <!-- Agent issue breakdown table -->
+  <div class="card">
+    <div class="card__title">Agent-level issue patterns <span style="font: 400 14px/20px var(--font-sans); color: var(--color-text-mid);">— 19 issues across 4 patterns</span></div>
+
+    <!-- Summary bar chart -->
+    <div class="bar-chart" style="margin-bottom: 32px;">
+      <div class="bar-row">
+        <div class="bar-row__label">Broken config</div>
+        <div class="bar-row__track">
+          <div class="bar-row__fill" style="width:32%; background: #C0392B;">32%</div>
+        </div>
+        <div class="bar-row__count">6</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-row__label">Wrong data</div>
+        <div class="bar-row__track">
+          <div class="bar-row__fill" style="width:26%; background: var(--color-agent);">26%</div>
+        </div>
+        <div class="bar-row__count">5</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-row__label">Can't do the task</div>
+        <div class="bar-row__track">
+          <div class="bar-row__fill" style="width:26%; background: var(--color-agent);">26%</div>
+        </div>
+        <div class="bar-row__count">5</div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-row__label">Skipped validation</div>
+        <div class="bar-row__track">
+          <div class="bar-row__fill" style="width:16%; background: #E68A00;">16%</div>
+        </div>
+        <div class="bar-row__count">3</div>
+      </div>
+    </div>
+
+    <!-- Pattern 1 -->
+    <div style="margin-top: 24px;">
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+        <div style="font: 600 15px/20px var(--font-sans); color: var(--color-text-high);">Pattern 1 &mdash; Agent returns wrong data</div>
+        <span class="tag tag--agent">5 issues</span>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr><th>Ticket</th><th>What happened</th><th>Agent</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>RS-120711</td><td>Wrong PunchOut request status shown</td><td>Timesheet</td></tr>
+          <tr><td>RS-121191</td><td>Says "timesheet deleted" when it wasn't</td><td>Timesheet</td></tr>
+          <tr><td>RS-121186</td><td>Wrong math comparing pay statements</td><td>Pay Info</td></tr>
+          <tr><td>RS-121352</td><td>PTO balance is incorrect</td><td>Accruals</td></tr>
+          <tr><td>RS-121182</td><td>5.9% truncated and saved as 5%</td><td>Direct Deposit</td></tr>
+        </tbody>
+      </table>
+      <div class="callout" style="margin-top: 12px;">
+        <div class="callout__text">The agent's API returns bad data or the agent misinterprets it. The orchestrator can't catch this — it has no second source to verify the answer against.</div>
+      </div>
+    </div>
+
+    <!-- Pattern 2 -->
+    <div style="margin-top: 32px;">
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+        <div style="font: 600 15px/20px var(--font-sans); color: var(--color-text-high);">Pattern 2 &mdash; Agent skips validation</div>
+        <span class="tag tag--agent">3 issues</span>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr><th>Ticket</th><th>What happened</th><th>Agent</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>RS-121183</td><td>No warning when date fields are left blank</td><td>Direct Deposit</td></tr>
+          <tr><td>RS-119450</td><td>Shows "Reserve Live Check" option that shouldn't be visible</td><td>Direct Deposit</td></tr>
+          <tr><td>RS-121508</td><td>Lets user try to cancel when that setting is turned off</td><td>Time Off</td></tr>
+        </tbody>
+      </table>
+      <div class="callout" style="margin-top: 12px;">
+        <div class="callout__text">The agent doesn't check business rules before presenting options or accepting input. It passes whatever it gets from the system without verifying if the user should see it.</div>
+      </div>
+    </div>
+
+    <!-- Pattern 3 -->
+    <div style="margin-top: 32px;">
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+        <div style="font: 600 15px/20px var(--font-sans); color: var(--color-text-high);">Pattern 3 &mdash; Agent can't do the task</div>
+        <span class="tag tag--agent">5 issues</span>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr><th>Ticket</th><th>What happened</th><th>Agent</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>RS-120651</td><td>Timesheet not updated after Clock In</td><td>Timesheet</td></tr>
+          <tr><td>RS-120673</td><td>Can't calculate work hours</td><td>Timesheet</td></tr>
+          <tr><td>RS-121659</td><td>Can't calculate current week hours</td><td>Timesheet</td></tr>
+          <tr><td>RS-120988</td><td>Can't modify timesheet using "Both" option</td><td>Timesheet</td></tr>
+          <tr><td>RS-120026</td><td>I-9 agent not working at all on UAT9</td><td>I-9</td></tr>
+        </tbody>
+      </table>
+      <div class="callout" style="margin-top: 12px;">
+        <div class="callout__text">The right agent received the request but its tools or APIs don't support the action, or there's a logic bug preventing it from completing the task.</div>
+      </div>
+      <div class="callout callout--warn" style="margin-top: 12px;">
+        <div class="callout__text">There's a structural reason these issues are hard to recover from. The <code>ExitAgentTool</code> only has two reason codes — <code>OUT_OF_SCOPE</code> and <code>TASK_COMPLETE</code>. There's no <code>CAPABILITY_LIMIT</code> signal. When an agent hits the edge of what it can do (e.g., Timesheet can't calculate hours for a specific pay rule), there's no way to send that back to the orchestrator — the agent just responds in plain text, and the orchestrator never finds out. Because no signal fires, no fallback or re-routing kicks in either. The user is left to figure out what to do next on their own. That's why Pattern 3 issues can't be softened at the orchestrator layer the way Pattern 1 and 2 issues can — only the agent's own wording can save the experience.</div>
+      </div>
+    </div>
+
+    <!-- Pattern 4 -->
+    <div style="margin-top: 32px;">
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+        <div style="font: 600 15px/20px var(--font-sans); color: var(--color-text-high);">Pattern 4 &mdash; Agent config is broken</div>
+        <span class="tag tag--agent">6 issues</span>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr><th>Ticket</th><th>What happened</th><th>Agent</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>RS-121035</td><td>Security_id missing in agent definition file</td><td>Absence</td></tr>
+          <tr><td>RS-121038</td><td>Security_id missing in agent definition file</td><td>Time</td></tr>
+          <tr><td>RS-121039</td><td>Security_id missing in agent definition file</td><td>Payroll</td></tr>
+          <tr><td>RS-121040</td><td>Security_id missing in agent definition file</td><td>Holiday</td></tr>
+          <tr><td>RS-121187</td><td>Shows internal Java error code to user (null PPP)</td><td>Absence</td></tr>
+          <tr><td>RS-118866</td><td>Can't query after a script command runs</td><td>Session / UI</td></tr>
+        </tbody>
+      </table>
+      <div class="callout" style="margin-top: 12px;">
+        <div class="callout__text">Missing fields in agent definition files or corrupted session state. These are setup/config fixes — not behavior changes.</div>
+      </div>
+    </div>
+
+    <div class="callout callout--warn" style="margin-top: 32px;">
+      <div class="callout__text">The orchestrator spec can't fix these, but it softens the impact. Rule <strong>FB-02</strong> (graceful error recovery) ensures that when an agent fails, the user sees a clear message instead of a raw error code or silence.</div>
+    </div>
+  </div>
+
+  <!-- How to fix agent issues -->
+  <div class="card">
+    <div class="card__title">How to address agent-level issues</div>
+    <div class="card__body" style="margin-bottom: 24px;">
+      <p>Agent bugs need two types of fixes: code fixes from each domain team, and behavior specs that define how each agent should communicate when things go wrong. Here's what applies now vs. what comes next.</p>
+    </div>
+
+    <!-- R105 now -->
+    <div style="margin-bottom: 28px;">
+      <div style="font: 600 15px/20px var(--font-sans); color: var(--color-ai-enabled); margin-bottom: 4px; text-transform: uppercase; font-size: 12px; letter-spacing: 1px;">R105 — What the orchestrator can do now</div>
+      <div style="font: 400 14px/20px var(--font-sans); color: var(--color-text-mid); margin-bottom: 16px;">The orchestrator sits between the user and every agent. Even without fixing the agents, these spec rules already in place soften the impact.</div>
+
+      <table class="data-table">
+        <thead>
+          <tr><th>Spec Rule</th><th>What it does</th><th>Helps with</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>FB-02</strong></td>
+            <td>When an agent fails, show a clear plain-language message instead of a raw error code or silence</td>
+            <td>Pattern 3 &amp; 4</td>
+          </tr>
+          <tr>
+            <td><strong>GRD-07</strong></td>
+            <td>Never fabricate data — if the agent can't get it, don't guess</td>
+            <td>Pattern 1</td>
+          </tr>
+          <tr>
+            <td><strong>FMT-06</strong></td>
+            <td>Recap what was collected before submitting — gives user a chance to catch missing fields even if the agent didn't validate</td>
+            <td>Pattern 2</td>
+          </tr>
+          <tr>
+            <td><strong>GRD-11</strong></td>
+            <td>Require explicit confirmation before any write action — safety net even if agent processed data incorrectly</td>
+            <td>Pattern 1 &amp; 2</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- R106+ next -->
+    <div>
+      <div style="font: 600 15px/20px var(--font-sans); color: var(--color-agent); margin-bottom: 4px; text-transform: uppercase; font-size: 12px; letter-spacing: 1px;">R106+ — What needs to happen next</div>
+      <div style="font: 400 14px/20px var(--font-sans); color: var(--color-text-mid); margin-bottom: 16px;">The orchestrator spec defines how Bryte behaves at the routing layer. Each agent also needs its own behavior spec — a short set of rules defining what it says when it can't complete a task, returns an error, or encounters a validation issue. Right now each domain team makes that up on their own.</div>
+
+      <table class="data-table">
+        <thead>
+          <tr><th>Agent</th><th>Issues</th><th>Why prioritize</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Timesheet</strong></td>
+            <td>6 issues</td>
+            <td>Highest pain — can't calculate hours, can't modify entries, wrong status. Needs rules for capability limits: what Bryte says when a task is out of the agent's ability, not just when it fails.</td>
+          </tr>
+          <tr>
+            <td><strong>Direct Deposit</strong></td>
+            <td>3 issues</td>
+            <td>Missing validation rules — agent accepts blank inputs and shows options users shouldn't see.</td>
+          </tr>
+          <tr>
+            <td><strong>Absence</strong></td>
+            <td>2 issues</td>
+            <td>Config gap and internal error code exposure. Quick win once config is fixed.</td>
+          </tr>
+          <tr>
+            <td><strong>All agents (config)</strong></td>
+            <td>4 issues</td>
+            <td>Security_id missing across 4 agents — engineering fix, not a behavior spec issue.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="callout" style="margin-top: 16px;">
+        <div class="callout__text">Writing behavior specs for <strong>Timesheet</strong> and <strong>Direct Deposit</strong> alone would cover 9 of the 19 agent-level issues — the two highest-pain agents in this release.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ SECTION 4 ═══════ -->
+  <div class="section-heading">3 &middot; The Spec's Real Value</div>
+
+  <div class="card">
+    <div class="card__title">The spec is a quality standard, not a bug fix</div>
+    <div class="card__body">
+      <p>Counting bugs fixed is the wrong metric. The spec's value shows up in four ways:</p>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px;">
+      <div style="padding: 20px; background: var(--color-surface-ai-subtle); border-radius: 8px;">
+        <div style="font: 600 15px/20px var(--font-sans); margin-bottom: 8px; color: var(--color-ai-enabled);">Prevention</div>
+        <div style="font: 400 14px/20px var(--font-sans); color: var(--color-text-mid);">Categories of issues that never get filed because the rules exist upfront. The 8 "exposing internals" issues would never have been raised if the spec was in place from day one.</div>
+      </div>
+      <div style="padding: 20px; background: var(--color-surface-ai-subtle); border-radius: 8px;">
+        <div style="font: 600 15px/20px var(--font-sans); margin-bottom: 8px; color: var(--color-ai-enabled);">Consistency</div>
+        <div style="font: 400 14px/20px var(--font-sans); color: var(--color-text-mid);">Every agent handles errors, confirmations, and fallbacks the same way. Without the spec, each domain team does it differently, and the user experience is inconsistent.</div>
+      </div>
+      <div style="padding: 20px; background: var(--color-surface-ai-subtle); border-radius: 8px;">
+        <div style="font: 600 15px/20px var(--font-sans); margin-bottom: 8px; color: var(--color-ai-enabled);">Speed of resolution</div>
+        <div style="font: 400 14px/20px var(--font-sans); color: var(--color-text-mid);">When CIRT files a bug, the spec gives a rule to point to. Instead of debating "how should Bryte handle this?", teams can reference a specific rule (e.g., "FB-02 says...") and implement it.</div>
+      </div>
+      <div style="padding: 20px; background: var(--color-surface-ai-subtle); border-radius: 8px;">
+        <div style="font: 600 15px/20px var(--font-sans); margin-bottom: 8px; color: var(--color-ai-enabled);">Eval criteria</div>
+        <div style="font: 400 14px/20px var(--font-sans); color: var(--color-text-mid);">The spec enables systematic testing. Instead of CIRT poking around hoping to find problems, teams can write evals directly from spec rules and catch violations before CIRT does.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ SECTION 5 ═══════ -->
+  <div class="section-heading">4 &middot; Gaps &amp; Recommendations</div>
+
+  <div class="card">
+    <div class="card__title">Three actions to increase coverage</div>
+
+    <div class="timeline mt-24">
+      <div class="timeline__item">
+        <div class="timeline__dot timeline__dot--done"></div>
+        <div class="timeline__title">R105 (now) &mdash; Ship the orchestrator spec</div>
+        <div class="timeline__desc">The spec covers 87% of behavioral issues. Add a <strong>localization section</strong> (4 rules) to close the remaining gap and reach 100% behavioral coverage. Add a <strong>response validation principle</strong> so the orchestrator catches agent errors before they reach the user.</div>
+      </div>
+      <div class="timeline__item">
+        <div class="timeline__dot"></div>
+        <div class="timeline__title">R106 &mdash; Agent-level behavior specs</div>
+        <div class="timeline__desc">Write short behavior specs (5&ndash;10 rules each) for the two highest-pain agents: <strong>Timesheet</strong> (6 issues) and <strong>Direct Deposit/Payroll</strong> (5 issues). These 2 specs would cover 11 of the 19 agent-level issues. Partner with domain teams to implement.</div>
+      </div>
+      <div class="timeline__item">
+        <div class="timeline__dot"></div>
+        <div class="timeline__title">R107+ &mdash; Expand agent specs</div>
+        <div class="timeline__desc">Roll out behavior specs to remaining agents (Absence, Accruals, Schedule, I-9, Course). Use CIRT data and eval results to prioritize which agents need specs next.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ SECTION 6 ═══════ -->
+  <div class="section-heading">5 &middot; Issues by Domain Team</div>
+
+  <div class="card">
+    <div class="card__title">CIRT issues per team with spec coverage</div>
+
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Domain Team</th>
+          <th>Total</th>
+          <th>Behavioral (spec covers)</th>
+          <th>Agent Bug</th>
+          <th>System</th>
+          <th>Closed</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>RDY AI &amp; Analytics / Bryte Trailblazers</strong></td>
+          <td style="font-weight: 600;">22</td>
+          <td><span style="color: var(--color-high); font-weight: 600;">13</span></td>
+          <td>1</td>
+          <td>8</td>
+          <td>0</td>
+        </tr>
+        <tr>
+          <td><strong>RDY Time Core &amp; Pay Calc</strong></td>
+          <td style="font-weight: 600;">8</td>
+          <td><span style="color: var(--color-high); font-weight: 600;">1</span></td>
+          <td>5</td>
+          <td>0</td>
+          <td>2</td>
+        </tr>
+        <tr>
+          <td><strong>RDY Payroll Processing</strong></td>
+          <td style="font-weight: 600;">6</td>
+          <td><span style="color: var(--color-high); font-weight: 600;">0</span></td>
+          <td>4</td>
+          <td>0</td>
+          <td>2</td>
+        </tr>
+        <tr>
+          <td><strong>RDY Absence Management</strong></td>
+          <td style="font-weight: 600;">6</td>
+          <td><span style="color: var(--color-high); font-weight: 600;">0</span></td>
+          <td>2</td>
+          <td>0</td>
+          <td>4</td>
+        </tr>
+        <tr>
+          <td><strong>RDY HR Govt Forms (Nomads)</strong></td>
+          <td style="font-weight: 600;">2</td>
+          <td><span style="color: var(--color-high); font-weight: 600;">0</span></td>
+          <td>1</td>
+          <td>0</td>
+          <td>1</td>
+        </tr>
+        <tr>
+          <td><strong>RDY Scheduler</strong></td>
+          <td style="font-weight: 600;">2</td>
+          <td><span style="color: var(--color-high); font-weight: 600;">0</span></td>
+          <td>0</td>
+          <td>0</td>
+          <td>2</td>
+        </tr>
+        <tr>
+          <td><strong>RDY Accruals</strong></td>
+          <td style="font-weight: 600;">2</td>
+          <td><span style="color: var(--color-high); font-weight: 600;">1</span></td>
+          <td>0</td>
+          <td>0</td>
+          <td>1</td>
+        </tr>
+        <tr>
+          <td><strong>RDY Learning</strong></td>
+          <td style="font-weight: 600;">2</td>
+          <td><span style="color: var(--color-high); font-weight: 600;">0</span></td>
+          <td>0</td>
+          <td>0</td>
+          <td>2</td>
+        </tr>
+        <tr>
+          <td><strong>Marvel (unlisted)</strong></td>
+          <td style="font-weight: 600;">1</td>
+          <td><span style="color: var(--color-high); font-weight: 600;">0</span></td>
+          <td>1</td>
+          <td>0</td>
+          <td>0</td>
+        </tr>
+        <tr style="background: var(--color-surface-ai-subtle); font-weight: 600;">
+          <td>Total</td>
+          <td>51</td>
+          <td style="color: var(--color-high);">15</td>
+          <td>14</td>
+          <td>8</td>
+          <td>14</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ SECTION 7 ═══════ -->
+  <div class="section-heading">6 &middot; The Bottom Line</div>
+
+  <div class="card card--highlight">
+    <div class="card__title">Summary for leadership</div>
+    <div class="card__body">
+      <p><strong>The orchestrator behavior spec covers 87% of behavioral issues found by CIRT.</strong> It directly addresses how Bryte talks, routes requests, handles errors, and protects against information leaks.</p>
+      <p>The remaining CIRT issues (58%) are <strong>agent-level code bugs</strong> &mdash; wrong calculations, missing validations, broken features. These require engineering fixes from each domain team, and are outside the spec's scope by design.</p>
+      <p>The spec's biggest value is not in patching existing bugs, but in <strong>preventing future ones</strong> and creating a <strong>shared quality standard</strong> that all teams build against. With one additional section (localization), the spec achieves full coverage of its domain.</p>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ FOOTER ══════════ -->
+  <footer class="footer">
+    Prepared by Bryte UX Team &middot; Data pulled from Jira (<code>labels = CIRTAgent</code>, 51 issues) on March 19, 2026 &middot; Behavior spec: <code>rdy-ux-orchestrator-behavior/orchestrator-spec/</code>
+  </footer>
+
+</div>
+</body>
+</html>
